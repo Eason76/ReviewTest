@@ -6,6 +6,7 @@ import (
     "net"
     "strings"
     "sync"
+    "time"
 )
 
 type Client struct {
@@ -39,13 +40,22 @@ func handleConnection(conn net.Conn) {
     for {
         message, err := reader.ReadString('\n')
         if err != nil {
-            mutex.Lock()
+            
             delete(clients, conn)
             mutex.Unlock()
             broadcast <- fmt.Sprintf("%s has left the chat!", name)
             return
         }
-        broadcast <- fmt.Sprintf("%s: %s", name, strings.TrimSpace(message))
+        handleMessage(client, strings.TrimSpace(message))
+    }
+}
+
+func handleMessage(client Client, message string) {
+    if strings.HasPrefix(message, "/time") {
+        currentTime := time.Now().Format("15:04:05")
+        fmt.Fprintf(client.conn, "Current time: %s\n", currentTime)
+    } else {
+        broadcast <- fmt.Sprintf("%s: %s", client.name, message)
     }
 }
 
